@@ -5,6 +5,7 @@ namespace App\Entity;
 use App\Enum\InventoryStatus;
 use App\Repository\ProductRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: ProductRepository::class)]
 class Product
@@ -14,11 +15,15 @@ class Product
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\Column(length: 255, nullable: true)]
-    private ?string $code = null;
+    #[ORM\Column(length: 255, nullable: false)]
+    #[Assert\NotBlank(message: "The product code is required")]
+    #[Assert\Length(min: 1, max: 255, minMessage: "The product code must be at least {{ limit }} characters long.", maxMessage: "The product code cannot be more than {{ limit }} characters")]
+    private ?string $code;
 
-    #[ORM\Column(length: 255, nullable: true)]
-    private ?string $name = null;
+    #[ORM\Column(length: 255, nullable: false)]
+    #[Assert\NotBlank(message: "The product name is required")]
+    #[Assert\Length(min: 1, max: 255, minMessage: "The product name must be at least {{ limit }} characters long.", maxMessage: "The product name cannot be more than {{ limit }} characters")]
+    private ?string $name;
 
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $description = null;
