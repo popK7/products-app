@@ -20,7 +20,7 @@ security:
         username_path: email
 
     api:
-      pattern: ^/api
+      pattern: ^/api/
       stateless: true
       jwt: ~
     dev:
@@ -34,3 +34,5 @@ security:
     - { path: ^/api/register, roles: PUBLIC_ACCESS }
     - { path: ^/api/login, roles: PUBLIC_ACCESS }
     - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }
+    - { path: ^/api/doc, roles: PUBLIC_ACCESS }
+    - { path: ^/documentations, roles: PUBLIC_ACCESS }
