@@ -83,17 +83,17 @@ class ProductController extends ApiController
             return $this->errorResponse('error', Response::HTTP_BAD_REQUEST, 'Unable to update product', $messages);
         }
 
-        $updatedBook = $serializer->deserialize(
+        $updatedProduct = $serializer->deserialize(
             $request->getContent(),
             Product::class,
             'json',
             [AbstractNormalizer::OBJECT_TO_POPULATE => $product]
         );
 
-        $em->persist($updatedBook);
+        $em->persist($updatedProduct);
         $em->flush();
 
-        return  $this->successResponse('success', Response::HTTP_CREATED, 'The product has been updated successfully', $updatedBook);
+        return  $this->successResponse('success', Response::HTTP_CREATED, 'The product has been updated successfully', $updatedProduct);
     }
     /**
      * @param Product $product
@@ -113,7 +113,7 @@ class ProductController extends ApiController
      * @return JsonResponse
      */
     #[Route('/api/v1/products/{id}', name: 'delete_product', methods: ["DELETE"])]
-    #[IsGranted('ROLE_ADMIN', message: "You do not have sufficient rights to delete a book")]
+    #[IsGranted('ROLE_ADMIN', message: "You do not have sufficient rights to delete a product")]
     public function delete(Product $product, EntityManagerInterface $em): JsonResponse
     {
         $em->remove($product);
