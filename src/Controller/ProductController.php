@@ -18,18 +18,24 @@ use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 class ProductController extends ApiController
 {
     protected $productRepository;
+    protected $serializer;
+    protected $validator;
+    protected $em;
 
-    public function __construct(ProductRepository $productRepository)
+    public function __construct(ProductRepository $productRepository, SerializerInterface $serializer, ValidatorInterface $validator, EntityManagerInterface $em)
     {
+        $this->em = $em;
+        $this->validator = $validator;
+        $this->serializer = $serializer;
         $this->productRepository = $productRepository;
     }
 
+    #[Route('/api/v1/products', name: 'get_products', methods: ['GET'])]
     /**
-     * @param ProductRepository $productRepository
+     * @param Request $request
      * 
      * @return JsonResponse
      */
-    #[Route('/api/v1/products', name: 'get_products', methods: ['GET'])]
     public function index(Request $request): JsonResponse
     {
         $page = $request->query->get('page') ?? 1;
@@ -39,42 +45,39 @@ class ProductController extends ApiController
 
         return  $this->successResponse('success', Response::HTTP_OK, 'The product list was returned successfully', $products);
     }
+
+    #[Route('/api/v1/products', name: 'store_product', methods: ['POST'])]
+    #[IsGranted('ROLE_ADMIN', message: "You do not have sufficient rights to create a Product")]
     /**
      * @param Request $request
-     * @param SerializerInterface $serializer
-     * @param EntityManagerInterface $em
      * 
      * @return JsonResponse
      */
-    #[Route('/api/v1/products', name: 'store_product', methods: ['POST'])]
-    #[IsGranted('ROLE_ADMIN', message: "You do not have sufficient rights to create a Product")]
-    public function store(Request $request, SerializerInterface $serializer, EntityManagerInterface $em): JsonResponse
+    public function store(Request $request): JsonResponse
     {
-        $product = $serializer->deserialize($request->getContent(), Product::class, 'json');
+        $product = $this->serializer->deserialize($request->getContent(), Product::class, 'json');
 
-        $em->persist($product);
-        $em->flush();
+        $this->em->persist($product);
+        $this->em->flush();
 
         return  $this->successResponse('success', Response::HTTP_CREATED, 'The product has been added successfully', $product);
     }
 
+
+    #[Route('/api/v1/products/{id}', name: 'update_product', methods: ['PUT'])]
+    #[IsGranted('ROLE_ADMIN', message: "You do not have sufficient rights to update a Product")]
     /**
      * @param Request $request
      * @param Product $product
-     * @param SerializerInterface $serializer
-     * @param ValidatorInterface $validator
-     * @param EntityManagerInterface $em
      * 
      * @return JsonResponse
      */
-    #[Route('/api/v1/products/{id}', name: 'update_product', methods: ['PUT'])]
-    #[IsGranted('ROLE_ADMIN', message: "You do not have sufficient rights to update a Product")]
-    public function update(Request $request, Product $product, SerializerInterface $serializer, ValidatorInterface $validator, EntityManagerInterface $em): JsonResponse
+    public function update(Request $request, Product $product): JsonResponse
     {
-        $data = $serializer->deserialize($request->getContent(), Product::class, 'json');
+        $data = $this->serializer->deserialize($request->getContent(), Product::class, 'json');
 
         // check errors exists
-        $errors = $validator->validate($data);
+        $errors = $this->validator->validate($data);
         if ($errors->count() > 0) {
             $messages = [];
             foreach ($errors as $violation) {
@@ -83,41 +86,42 @@ class ProductController extends ApiController
             return $this->errorResponse('error', Response::HTTP_BAD_REQUEST, 'Unable to update product', $messages);
         }
 
-        $updatedProduct = $serializer->deserialize(
+        $updatedProduct = $this->serializer->deserialize(
             $request->getContent(),
             Product::class,
             'json',
             [AbstractNormalizer::OBJECT_TO_POPULATE => $product]
         );
 
-        $em->persist($updatedProduct);
-        $em->flush();
+        $this->em->persist($updatedProduct);
+        $this->em->flush();
 
         return  $this->successResponse('success', Response::HTTP_CREATED, 'The product has been updated successfully', $updatedProduct);
     }
+
+    #[Route('/api/v1/products/{id}', name: 'get_product', methods: ['GET'])]
     /**
      * @param Product $product
      * 
      * @return JsonResponse
      */
-    #[Route('/api/v1/products/{id}', name: 'get_product', methods: ['GET'])]
     public function show(Product $product): JsonResponse
     {
         return  $this->successResponse('success', Response::HTTP_OK, 'The product has been retrieved successfully', $product);
     }
 
+
+    #[Route('/api/v1/products/{id}', name: 'delete_product', methods: ["DELETE"])]
+    #[IsGranted('ROLE_ADMIN', message: "You do not have sufficient rights to delete a product")]
     /**
      * @param Product $product
-     * @param EntityManagerInterface $em
      * 
      * @return JsonResponse
      */
-    #[Route('/api/v1/products/{id}', name: 'delete_product', methods: ["DELETE"])]
-    #[IsGranted('ROLE_ADMIN', message: "You do not have sufficient rights to delete a product")]
-    public function delete(Product $product, EntityManagerInterface $em): JsonResponse
+    public function delete(Product $product): JsonResponse
     {
-        $em->remove($product);
-        $em->flush();
+        $this->em->remove($product);
+        $this->em->flush();
 
         return  $this->successResponse('success', Response::HTTP_NO_CONTENT, 'The product has been deleted successfully');
     }
